@@ -13,38 +13,69 @@
   </header>
 
   <main>
-    <!-- Robot Pose -->
-    <section class="card" id="pose-card">
-      <h2>Robot Pose</h2>
-      <div class="grid-2col">
-        <div><span class="label">X:</span> <span id="pose-x">--</span> m</div>
-        <div><span class="label">Y:</span> <span id="pose-y">--</span> m</div>
-        <div><span class="label">Yaw:</span> <span id="pose-yaw">--</span> deg</div>
-      </div>
+    <!-- 2D Warehouse Map -->
+    <section class="card" id="map-card">
+      <h2>Warehouse Map (Live)</h2>
+      <canvas id="warehouse-map" width="700" height="500"></canvas>
     </section>
 
-    <!-- Battery -->
-    <section class="card" id="battery-card">
-      <h2>Battery</h2>
-      <div class="battery-bar-container">
-        <div class="battery-bar" id="battery-bar" style="width: 0%"></div>
-      </div>
-      <div class="grid-2col">
-        <div><span class="label">Level:</span> <span id="battery-pct">--</span>%</div>
-        <div><span class="label">Voltage:</span> <span id="battery-volt">--</span> V</div>
-        <div><span class="label">Status:</span> <span id="battery-status">--</span></div>
-      </div>
-    </section>
+    <!-- Right column: status panels -->
+    <div class="right-panels">
+      <!-- Robot Pose -->
+      <section class="card" id="pose-card">
+        <h2>Robot Pose</h2>
+        <div class="grid-2col">
+          <div><span class="label">X:</span> <span id="pose-x">--</span> m</div>
+          <div><span class="label">Y:</span> <span id="pose-y">--</span> m</div>
+          <div><span class="label">Yaw:</span> <span id="pose-yaw">--</span> deg</div>
+        </div>
+      </section>
 
-    <!-- Current Task -->
-    <section class="card" id="task-card">
-      <h2>Current Task</h2>
-      <div id="current-task-content">
-        <p class="dim">No active task</p>
-      </div>
-    </section>
+      <!-- Battery -->
+      <section class="card" id="battery-card">
+        <h2>Battery</h2>
+        <div class="battery-bar-container">
+          <div class="battery-bar" id="battery-bar" style="width: 0%"></div>
+        </div>
+        <div class="grid-2col">
+          <div><span class="label">Level:</span> <span id="battery-pct">--</span>%</div>
+          <div><span class="label">Voltage:</span> <span id="battery-volt">--</span> V</div>
+          <div><span class="label">Status:</span> <span id="battery-status">--</span></div>
+        </div>
+      </section>
 
-    <!-- Task Queue -->
+      <!-- Current Task -->
+      <section class="card" id="task-card">
+        <h2>Current Task</h2>
+        <div id="current-task-content">
+          <p class="dim">No active task</p>
+        </div>
+      </section>
+
+      <!-- Submit Order -->
+      <section class="card" id="order-card">
+        <h2>Submit Order</h2>
+        <div class="order-form">
+          <select id="pickup-select">
+            <option value="A">Pickup A</option>
+            <option value="B">Pickup B</option>
+          </select>
+          <select id="delivery-select">
+            <option value="D1">Delivery D1</option>
+            <option value="D2">Delivery D2</option>
+          </select>
+          <select id="priority-select">
+            <option value="1">Priority 1</option>
+            <option value="2">Priority 2</option>
+            <option value="3">Priority 3 (High)</option>
+          </select>
+          <button id="submit-order-btn">Send Order</button>
+          <div id="order-result" class="dim"></div>
+        </div>
+      </section>
+    </div>
+
+    <!-- Task Queue (full width) -->
     <section class="card" id="queue-card">
       <h2>Task Queue</h2>
       <table id="queue-table">

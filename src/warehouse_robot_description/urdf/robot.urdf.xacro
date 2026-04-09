@@ -30,7 +30,6 @@
   <xacro:lidar_sensor/>
   <xacro:imu_sensor/>
   <xacro:camera_sensor/>
-  <xacro:ros2_control_hardware/>
   <xacro:gazebo_plugins/>
 
 </robot>

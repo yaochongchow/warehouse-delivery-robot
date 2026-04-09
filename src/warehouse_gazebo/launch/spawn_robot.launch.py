@@ -1,9 +1,9 @@
 import os
 from launch import LaunchDescription
-from launch.actions import DeclareLaunchArgument, RegisterEventHandler
-from launch.event_handlers import OnProcessExit
+from launch.actions import DeclareLaunchArgument
 from launch.substitutions import Command, LaunchConfiguration
 from launch_ros.actions import Node
+from launch_ros.parameter_descriptions import ParameterValue
 from ament_index_python.packages import get_package_share_directory
 
 
@@ -22,7 +22,7 @@ def generate_launch_description():
     robot_state_publisher = Node(
         package='robot_state_publisher',
         executable='robot_state_publisher',
-        parameters=[{'robot_description': robot_description}],
+        parameters=[{'robot_description': ParameterValue(robot_description, value_type=str)}],
         output='screen',
     )
 
@@ -37,38 +37,9 @@ def generate_launch_description():
             '-y', LaunchConfiguration('y'),
             '-z', LaunchConfiguration('z'),
             '-Y', LaunchConfiguration('yaw'),
+            '-timeout', '120',
         ],
         output='screen',
-    )
-
-    # Activate controllers after spawn
-    joint_state_broadcaster_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['joint_state_broadcaster'],
-        output='screen',
-    )
-
-    diff_drive_spawner = Node(
-        package='controller_manager',
-        executable='spawner',
-        arguments=['diff_drive_controller'],
-        output='screen',
-    )
-
-    # Chain: spawn entity -> activate joint_state_broadcaster -> activate diff_drive
-    activate_jsb_after_spawn = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=spawn_entity,
-            on_exit=[joint_state_broadcaster_spawner],
-        )
-    )
-
-    activate_dd_after_jsb = RegisterEventHandler(
-        event_handler=OnProcessExit(
-            target_action=joint_state_broadcaster_spawner,
-            on_exit=[diff_drive_spawner],
-        )
     )
 
     return LaunchDescription([
@@ -78,6 +49,4 @@ def generate_launch_description():
         yaw_arg,
         robot_state_publisher,
         spawn_entity,
-        activate_jsb_after_spawn,
-        activate_dd_after_jsb,
     ])

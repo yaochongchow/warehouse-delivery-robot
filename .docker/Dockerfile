@@ -8,16 +8,20 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-ros2-control \
     ros-humble-ros2-controllers \
     ros-humble-gazebo-ros2-control \
+    ros-humble-gazebo-plugins \
     ros-humble-rosbridge-server \
     ros-humble-teleop-twist-keyboard \
     ros-humble-diagnostic-updater \
     ros-humble-xacro \
     python3-pip \
+    xvfb x11vnc novnc websockify \
     && rm -rf /var/lib/apt/lists/*
 
 RUN pip3 install rich textual
 
 ENV ROS_DOMAIN_ID=0
+ENV GAZEBO_PLUGIN_PATH=/opt/ros/humble/lib
+ENV GAZEBO_MODEL_PATH=/usr/share/gazebo-11/models
 WORKDIR /ros2_ws
 
 # Stage 2: Copy source and build

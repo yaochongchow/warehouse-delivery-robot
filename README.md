@@ -295,3 +295,36 @@ Robot spawns at the south end facing north.
 ## License
 
 MIT
+
+---
+
+## Troubleshooting (Docker)
+
+If `docker compose up --build` fails with:
+
+```text
+permission denied while trying to connect to the Docker daemon socket
+```
+
+run Compose with sudo:
+
+```bash
+cd .docker
+sudo docker compose up --build -d
+```
+
+If Gazebo fails with:
+
+```text
+Unable to start server[bind: Address already in use]
+```
+
+it usually means a stale `gzserver` process is still running in the container. Restart the container and relaunch:
+
+```bash
+sudo docker restart docker-ros2-1
+sudo docker exec -it docker-ros2-1 bash
+source /opt/ros/humble/setup.bash
+source /ros2_ws/install/setup.bash
+ros2 launch warehouse_bringup full_system.launch.py
+```

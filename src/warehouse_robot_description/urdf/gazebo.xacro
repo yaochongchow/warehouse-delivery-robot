@@ -24,14 +24,44 @@
       <material>Gazebo/Red</material>
     </gazebo>
 
-    <!-- ros2_control plugin (loads controller manager) -->
+    <!-- Differential drive plugin (replaces ros2_control for simplicity) -->
     <gazebo>
-      <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
-        <parameters>$(find warehouse_robot_description)/config/ros2_controllers.yaml</parameters>
+      <plugin name="diff_drive" filename="libgazebo_ros_diff_drive.so">
+        <ros>
+          <remapping>cmd_vel:=cmd_vel</remapping>
+          <remapping>odom:=odom</remapping>
+        </ros>
+        <update_rate>50</update_rate>
+        <left_joint>left_wheel_joint</left_joint>
+        <right_joint>right_wheel_joint</right_joint>
+        <wheel_separation>0.44</wheel_separation>
+        <wheel_diameter>0.2</wheel_diameter>
+        <max_wheel_torque>20.0</max_wheel_torque>
+        <max_wheel_acceleration>1.0</max_wheel_acceleration>
+        <command_topic>cmd_vel</command_topic>
+        <odometry_topic>odom</odometry_topic>
+        <odometry_frame>odom</odometry_frame>
+        <robot_base_frame>base_footprint</robot_base_frame>
+        <publish_odom>true</publish_odom>
+        <publish_odom_tf>true</publish_odom_tf>
+        <publish_wheel_tf>false</publish_wheel_tf>
+        <odometry_source>1</odometry_source>
       </plugin>
     </gazebo>
 
-    <!-- Lidar (GPU ray sensor) -->
+    <!-- Joint state publisher plugin -->
+    <gazebo>
+      <plugin name="joint_state_publisher" filename="libgazebo_ros_joint_state_publisher.so">
+        <ros>
+          <remapping>~/out:=joint_states</remapping>
+        </ros>
+        <update_rate>50</update_rate>
+        <joint_name>left_wheel_joint</joint_name>
+        <joint_name>right_wheel_joint</joint_name>
+      </plugin>
+    </gazebo>
+
+    <!-- Lidar sensor -->
     <gazebo reference="lidar_link">
       <sensor name="lidar" type="ray">
         <always_on>true</always_on>
@@ -90,40 +120,6 @@
           </ros>
           <initial_orientation_as_reference>false</initial_orientation_as_reference>
           <frame_name>imu_link</frame_name>
-        </plugin>
-      </sensor>
-    </gazebo>
-
-    <!-- Camera sensor -->
-    <gazebo reference="camera_link">
-      <sensor name="camera" type="camera">
-        <always_on>true</always_on>
-        <update_rate>30.0</update_rate>
-        <visualize>false</visualize>
-        <camera>
-          <horizontal_fov>1.3962634</horizontal_fov>
-          <image>
-            <width>640</width>
-            <height>480</height>
-            <format>R8G8B8</format>
-          </image>
-          <clip>
-            <near>0.02</near>
-            <far>100.0</far>
-          </clip>
-          <noise>
-            <type>gaussian</type>
-            <mean>0.0</mean>
-            <stddev>0.007</stddev>
-          </noise>
-        </camera>
-        <plugin name="camera_plugin" filename="libgazebo_ros_camera.so">
-          <ros>
-            <remapping>~/image_raw:=camera/image_raw</remapping>
-            <remapping>~/camera_info:=camera/camera_info</remapping>
-          </ros>
-          <camera_name>camera</camera_name>
-          <frame_name>camera_optical_link</frame_name>
         </plugin>
       </sensor>
     </gazebo>

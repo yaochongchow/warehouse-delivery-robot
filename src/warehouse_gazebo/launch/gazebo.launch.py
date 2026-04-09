@@ -18,6 +18,12 @@ def generate_launch_description():
         value=models_dir,
     )
 
+    # Set GAZEBO_PLUGIN_PATH so Gazebo can find ROS2 plugins
+    set_plugin_path = SetEnvironmentVariable(
+        name='GAZEBO_PLUGIN_PATH',
+        value='/opt/ros/humble/lib',
+    )
+
     # Launch Gazebo server + client
     gazebo = IncludeLaunchDescription(
         PythonLaunchDescriptionSource(
@@ -27,10 +33,12 @@ def generate_launch_description():
             'world': world_file,
             'verbose': 'false',
             'pause': 'false',
+            'gui': 'false',
         }.items(),
     )
 
     return LaunchDescription([
         set_model_path,
+        set_plugin_path,
         gazebo,
     ])

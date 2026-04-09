@@ -87,6 +87,28 @@ def generate_launch_description():
         parameters=[
             params_file,
             {'use_sim_time': use_sim_time},
+            {'FollowPath.plugin': 'nav2_regulated_pure_pursuit_controller::RegulatedPurePursuitController'},
+            {'FollowPath.desired_linear_vel': 0.5},
+            {'FollowPath.lookahead_dist': 0.6},
+            {'FollowPath.min_lookahead_dist': 0.3},
+            {'FollowPath.max_lookahead_dist': 0.9},
+            {'FollowPath.lookahead_time': 1.5},
+            {'FollowPath.rotate_to_heading_angular_vel': 1.8},
+            {'FollowPath.transform_tolerance': 0.1},
+            {'FollowPath.use_velocity_scaled_lookahead_dist': False},
+            {'FollowPath.min_approach_linear_velocity': 0.05},
+            {'FollowPath.approach_velocity_scaling_dist': 0.6},
+            {'FollowPath.use_collision_detection': True},
+            {'FollowPath.max_allowed_time_to_collision_up_to_carrot': 1.0},
+            {'FollowPath.use_regulated_linear_velocity_scaling': True},
+            {'FollowPath.use_fixed_curvature_lookahead': False},
+            {'FollowPath.regulated_linear_scaling_min_radius': 0.9},
+            {'FollowPath.regulated_linear_scaling_min_speed': 0.25},
+            {'FollowPath.use_rotate_to_heading': True},
+            {'FollowPath.allow_reversing': False},
+            {'FollowPath.rotate_to_heading_min_angle': 0.785},
+            {'FollowPath.max_angular_accel': 3.2},
+            {'FollowPath.max_robot_pose_search_dist': 10.0},
         ],
     )
 
@@ -102,9 +124,9 @@ def generate_launch_description():
     )
 
     recoveries_server = Node(
-        package='nav2_recoveries',
-        executable='recoveries_server',
-        name='recoveries_server',
+        package='nav2_behaviors',
+        executable='behavior_server',
+        name='behavior_server',
         output='screen',
         parameters=[
             params_file,
@@ -135,7 +157,7 @@ def generate_launch_description():
             {'node_names': [
                 'controller_server',
                 'planner_server',
-                'recoveries_server',
+                'behavior_server',
                 'bt_navigator',
             ]},
         ],

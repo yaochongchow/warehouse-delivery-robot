@@ -111,57 +111,7 @@
       <pose>8.5 6 0 0 0 1.5708</pose>
     </include>
 
-    <!-- ============================================ -->
-    <!-- HUMAN ACTORS (dynamic obstacles)              -->
-    <!-- ============================================ -->
-
-    <!-- Actor 1: walks across aisles (east-west) -->
-    <actor name="human_walker_1">
-      <skin>
-        <filename>walk.dae</filename>
-        <scale>1.0</scale>
-      </skin>
-      <animation name="walking">
-        <filename>walk.dae</filename>
-        <scale>1.0</scale>
-        <interpolate_x>true</interpolate_x>
-      </animation>
-      <script>
-        <loop>true</loop>
-        <auto_start>true</auto_start>
-        <trajectory id="0" type="walking">
-          <waypoint><time>0</time><pose>-6 -2.75 0 0 0 0</pose></waypoint>
-          <waypoint><time>15</time><pose>6 -2.75 0 0 0 0</pose></waypoint>
-          <waypoint><time>16</time><pose>6 -2.75 0 0 0 3.14</pose></waypoint>
-          <waypoint><time>31</time><pose>-6 -2.75 0 0 0 3.14</pose></waypoint>
-          <waypoint><time>32</time><pose>-6 -2.75 0 0 0 0</pose></waypoint>
-        </trajectory>
-      </script>
-    </actor>
-
-    <!-- Actor 2: walks across aisles (north-south) -->
-    <actor name="human_walker_2">
-      <skin>
-        <filename>walk.dae</filename>
-        <scale>1.0</scale>
-      </skin>
-      <animation name="walking">
-        <filename>walk.dae</filename>
-        <scale>1.0</scale>
-        <interpolate_x>true</interpolate_x>
-      </animation>
-      <script>
-        <loop>true</loop>
-        <auto_start>true</auto_start>
-        <trajectory id="0" type="walking">
-          <waypoint><time>0</time><pose>2 -5 0 0 0 1.5708</pose></waypoint>
-          <waypoint><time>12</time><pose>2 5 0 0 0 1.5708</pose></waypoint>
-          <waypoint><time>13</time><pose>2 5 0 0 0 -1.5708</pose></waypoint>
-          <waypoint><time>25</time><pose>2 -5 0 0 0 -1.5708</pose></waypoint>
-          <waypoint><time>26</time><pose>2 -5 0 0 0 1.5708</pose></waypoint>
-        </trajectory>
-      </script>
-    </actor>
+    <!-- Human actors disabled for headless/Docker compatibility -->
 
   </world>
 </sdf>
