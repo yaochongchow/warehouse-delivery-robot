@@ -1,0 +1,57 @@
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <Sequence name="DeliverItem">
+
+      <!-- Phase 1: Navigate to pickup location -->
+      <RecoveryNode number_of_retries="3" name="NavigateToPickup">
+        <PipelineSequence name="NavToPickup">
+          <RateController hz="1.0">
+            <ComputePathToPose goal="{pickup_goal}" path="{path}" planner_id="GridBased"/>
+          </RateController>
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+        </PipelineSequence>
+        <ReactiveFallback name="PickupRecovery">
+          <GoalUpdated/>
+          <RoundRobin name="PickupRecoveryActions">
+            <Sequence name="ClearCostmaps">
+              <ClearEntireCostmap name="ClearLocalCostmap" service_name="local_costmap/clear_entirely_local_costmap"/>
+              <ClearEntireCostmap name="ClearGlobalCostmap" service_name="global_costmap/clear_entirely_global_costmap"/>
+            </Sequence>
+            <Spin spin_dist="1.57"/>
+            <Wait wait_duration="3"/>
+            <BackUp backup_dist="0.30" backup_speed="0.05"/>
+          </RoundRobin>
+        </ReactiveFallback>
+      </RecoveryNode>
+
+      <!-- Phase 2: Wait at pickup for loading -->
+      <Wait wait_duration="5"/>
+
+      <!-- Phase 3: Navigate to delivery location -->
+      <RecoveryNode number_of_retries="3" name="NavigateToDelivery">
+        <PipelineSequence name="NavToDelivery">
+          <RateController hz="1.0">
+            <ComputePathToPose goal="{delivery_goal}" path="{path}" planner_id="GridBased"/>
+          </RateController>
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+        </PipelineSequence>
+        <ReactiveFallback name="DeliveryRecovery">
+          <GoalUpdated/>
+          <RoundRobin name="DeliveryRecoveryActions">
+            <Sequence name="ClearCostmaps">
+              <ClearEntireCostmap name="ClearLocalCostmap" service_name="local_costmap/clear_entirely_local_costmap"/>
+              <ClearEntireCostmap name="ClearGlobalCostmap" service_name="global_costmap/clear_entirely_global_costmap"/>
+            </Sequence>
+            <Spin spin_dist="1.57"/>
+            <Wait wait_duration="3"/>
+            <BackUp backup_dist="0.30" backup_speed="0.05"/>
+          </RoundRobin>
+        </ReactiveFallback>
+      </RecoveryNode>
+
+      <!-- Phase 4: Wait at delivery for unloading -->
+      <Wait wait_duration="5"/>
+
+    </Sequence>
+  </BehaviorTree>
+</root>

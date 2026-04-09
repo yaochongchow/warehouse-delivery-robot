@@ -1,0 +1,133 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <xacro:macro name="gazebo_plugins">
+
+    <!-- Gazebo material colors -->
+    <gazebo reference="base_link">
+      <material>Gazebo/DarkGrey</material>
+    </gazebo>
+    <gazebo reference="top_plate">
+      <material>Gazebo/Blue</material>
+    </gazebo>
+    <gazebo reference="left_wheel_link">
+      <material>Gazebo/Black</material>
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+    <gazebo reference="right_wheel_link">
+      <material>Gazebo/Black</material>
+      <mu1>1.0</mu1>
+      <mu2>1.0</mu2>
+    </gazebo>
+    <gazebo reference="lidar_link">
+      <material>Gazebo/Red</material>
+    </gazebo>
+
+    <!-- ros2_control plugin (loads controller manager) -->
+    <gazebo>
+      <plugin filename="libgazebo_ros2_control.so" name="gazebo_ros2_control">
+        <parameters>$(find warehouse_robot_description)/config/ros2_controllers.yaml</parameters>
+      </plugin>
+    </gazebo>
+
+    <!-- Lidar (GPU ray sensor) -->
+    <gazebo reference="lidar_link">
+      <sensor name="lidar" type="ray">
+        <always_on>true</always_on>
+        <update_rate>10.0</update_rate>
+        <visualize>false</visualize>
+        <ray>
+          <scan>
+            <horizontal>
+              <samples>360</samples>
+              <resolution>1</resolution>
+              <min_angle>-3.14159</min_angle>
+              <max_angle>3.14159</max_angle>
+            </horizontal>
+          </scan>
+          <range>
+            <min>0.15</min>
+            <max>12.0</max>
+            <resolution>0.01</resolution>
+          </range>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.01</stddev>
+          </noise>
+        </ray>
+        <plugin name="lidar_plugin" filename="libgazebo_ros_ray_sensor.so">
+          <ros>
+            <remapping>~/out:=scan</remapping>
+          </ros>
+          <output_type>sensor_msgs/LaserScan</output_type>
+          <frame_name>lidar_link</frame_name>
+        </plugin>
+      </sensor>
+    </gazebo>
+
+    <!-- IMU sensor -->
+    <gazebo reference="imu_link">
+      <sensor name="imu" type="imu">
+        <always_on>true</always_on>
+        <update_rate>100.0</update_rate>
+        <imu>
+          <angular_velocity>
+            <x><noise type="gaussian"><mean>0.0</mean><stddev>0.0002</stddev></noise></x>
+            <y><noise type="gaussian"><mean>0.0</mean><stddev>0.0002</stddev></noise></y>
+            <z><noise type="gaussian"><mean>0.0</mean><stddev>0.0002</stddev></noise></z>
+          </angular_velocity>
+          <linear_acceleration>
+            <x><noise type="gaussian"><mean>0.0</mean><stddev>0.017</stddev></noise></x>
+            <y><noise type="gaussian"><mean>0.0</mean><stddev>0.017</stddev></noise></y>
+            <z><noise type="gaussian"><mean>0.0</mean><stddev>0.017</stddev></noise></z>
+          </linear_acceleration>
+        </imu>
+        <plugin name="imu_plugin" filename="libgazebo_ros_imu_sensor.so">
+          <ros>
+            <remapping>~/out:=imu</remapping>
+          </ros>
+          <initial_orientation_as_reference>false</initial_orientation_as_reference>
+          <frame_name>imu_link</frame_name>
+        </plugin>
+      </sensor>
+    </gazebo>
+
+    <!-- Camera sensor -->
+    <gazebo reference="camera_link">
+      <sensor name="camera" type="camera">
+        <always_on>true</always_on>
+        <update_rate>30.0</update_rate>
+        <visualize>false</visualize>
+        <camera>
+          <horizontal_fov>1.3962634</horizontal_fov>
+          <image>
+            <width>640</width>
+            <height>480</height>
+            <format>R8G8B8</format>
+          </image>
+          <clip>
+            <near>0.02</near>
+            <far>100.0</far>
+          </clip>
+          <noise>
+            <type>gaussian</type>
+            <mean>0.0</mean>
+            <stddev>0.007</stddev>
+          </noise>
+        </camera>
+        <plugin name="camera_plugin" filename="libgazebo_ros_camera.so">
+          <ros>
+            <remapping>~/image_raw:=camera/image_raw</remapping>
+            <remapping>~/camera_info:=camera/camera_info</remapping>
+          </ros>
+          <camera_name>camera</camera_name>
+          <frame_name>camera_optical_link</frame_name>
+        </plugin>
+      </sensor>
+    </gazebo>
+
+  </xacro:macro>
+
+</robot>

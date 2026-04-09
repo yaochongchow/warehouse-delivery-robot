@@ -1,0 +1,49 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build-and-test:
+    runs-on: ubuntu-22.04
+    container:
+      image: osrf/ros:humble-desktop
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          apt-get update
+          rosdep install --from-paths src --ignore-src -r -y
+          pip3 install rich textual
+
+      - name: Build
+        run: |
+          . /opt/ros/humble/setup.sh
+          colcon build --symlink-install
+
+      - name: Test
+        run: |
+          . /opt/ros/humble/setup.sh
+          . install/setup.sh
+          colcon test
+          colcon test-result --verbose
+
+  lint:
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.10'
+
+      - name: Install linters
+        run: pip install flake8
+
+      - name: Lint
+        run: flake8 src/ --max-line-length=100 --exclude=__pycache__

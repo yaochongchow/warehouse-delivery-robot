@@ -1,0 +1,82 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="shelf_unit">
+    <static>true</static>
+
+    <!-- Left upright -->
+    <link name="left_upright">
+      <pose>0 -0.4 0.75 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>0.05 0.05 1.5</size></box></geometry>
+        <material>
+          <ambient>0.5 0.5 0.55 1</ambient>
+          <diffuse>0.6 0.6 0.65 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>0.05 0.05 1.5</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- Right upright -->
+    <link name="right_upright">
+      <pose>0 0.4 0.75 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>0.05 0.05 1.5</size></box></geometry>
+        <material>
+          <ambient>0.5 0.5 0.55 1</ambient>
+          <diffuse>0.6 0.6 0.65 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>0.05 0.05 1.5</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- Bottom shelf -->
+    <link name="shelf_bottom">
+      <pose>0 0 0.3 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>0.6 0.85 0.03</size></box></geometry>
+        <material>
+          <ambient>0.4 0.3 0.2 1</ambient>
+          <diffuse>0.5 0.4 0.3 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>0.6 0.85 0.03</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- Middle shelf -->
+    <link name="shelf_middle">
+      <pose>0 0 0.75 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>0.6 0.85 0.03</size></box></geometry>
+        <material>
+          <ambient>0.4 0.3 0.2 1</ambient>
+          <diffuse>0.5 0.4 0.3 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>0.6 0.85 0.03</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- Top shelf -->
+    <link name="shelf_top">
+      <pose>0 0 1.2 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>0.6 0.85 0.03</size></box></geometry>
+        <material>
+          <ambient>0.4 0.3 0.2 1</ambient>
+          <diffuse>0.5 0.4 0.3 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>0.6 0.85 0.03</size></box></geometry>
+      </collision>
+    </link>
+
+  </model>
+</sdf>

@@ -1,0 +1,15 @@
+# Goal
+string order_id
+string pickup_station
+string delivery_station
+uint8 priority
+---
+# Result
+bool success
+string message
+float64 duration_seconds
+---
+# Feedback
+string current_phase
+float32 progress
+string status_message

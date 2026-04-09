@@ -1,0 +1,113 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <model name="warehouse_building">
+    <static>true</static>
+
+    <!-- Floor -->
+    <link name="floor">
+      <pose>0 0 0.0 0 0 0</pose>
+      <visual name="visual">
+        <geometry><plane><normal>0 0 1</normal><size>20 15</size></plane></geometry>
+        <material>
+          <ambient>0.55 0.55 0.55 1</ambient>
+          <diffuse>0.6 0.6 0.6 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><plane><normal>0 0 1</normal><size>20 15</size></plane></geometry>
+      </collision>
+    </link>
+
+    <!-- North wall (back) -->
+    <link name="north_wall">
+      <pose>0 7.5 1.5 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>20 0.2 3.0</size></box></geometry>
+        <material>
+          <ambient>0.75 0.72 0.68 1</ambient>
+          <diffuse>0.8 0.77 0.73 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>20 0.2 3.0</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- South wall (front, with dock door openings) -->
+    <!-- Left segment -->
+    <link name="south_wall_left">
+      <pose>-6.5 -7.5 1.5 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>7 0.2 3.0</size></box></geometry>
+        <material>
+          <ambient>0.75 0.72 0.68 1</ambient>
+          <diffuse>0.8 0.77 0.73 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>7 0.2 3.0</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- Center segment (between dock doors) -->
+    <link name="south_wall_center">
+      <pose>0 -7.5 1.5 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>2 0.2 3.0</size></box></geometry>
+        <material>
+          <ambient>0.75 0.72 0.68 1</ambient>
+          <diffuse>0.8 0.77 0.73 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>2 0.2 3.0</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- Right segment -->
+    <link name="south_wall_right">
+      <pose>6.5 -7.5 1.5 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>7 0.2 3.0</size></box></geometry>
+        <material>
+          <ambient>0.75 0.72 0.68 1</ambient>
+          <diffuse>0.8 0.77 0.73 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>7 0.2 3.0</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- East wall -->
+    <link name="east_wall">
+      <pose>10 0 1.5 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>0.2 15 3.0</size></box></geometry>
+        <material>
+          <ambient>0.75 0.72 0.68 1</ambient>
+          <diffuse>0.8 0.77 0.73 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>0.2 15 3.0</size></box></geometry>
+      </collision>
+    </link>
+
+    <!-- West wall -->
+    <link name="west_wall">
+      <pose>-10 0 1.5 0 0 0</pose>
+      <visual name="visual">
+        <geometry><box><size>0.2 15 3.0</size></box></geometry>
+        <material>
+          <ambient>0.75 0.72 0.68 1</ambient>
+          <diffuse>0.8 0.77 0.73 1</diffuse>
+        </material>
+      </visual>
+      <collision name="collision">
+        <geometry><box><size>0.2 15 3.0</size></box></geometry>
+      </collision>
+    </link>
+
+  </model>
+</sdf>

@@ -1,0 +1,7 @@
+string pickup_station
+string delivery_station
+uint8 priority
+---
+string order_id
+bool accepted
+string message

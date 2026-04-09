@@ -1,0 +1,75 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Warehouse Robot Dashboard</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Warehouse Robot Dashboard</h1>
+    <span id="connection-status" class="status-disconnected">Disconnected</span>
+  </header>
+
+  <main>
+    <!-- Robot Pose -->
+    <section class="card" id="pose-card">
+      <h2>Robot Pose</h2>
+      <div class="grid-2col">
+        <div><span class="label">X:</span> <span id="pose-x">--</span> m</div>
+        <div><span class="label">Y:</span> <span id="pose-y">--</span> m</div>
+        <div><span class="label">Yaw:</span> <span id="pose-yaw">--</span> deg</div>
+      </div>
+    </section>
+
+    <!-- Battery -->
+    <section class="card" id="battery-card">
+      <h2>Battery</h2>
+      <div class="battery-bar-container">
+        <div class="battery-bar" id="battery-bar" style="width: 0%"></div>
+      </div>
+      <div class="grid-2col">
+        <div><span class="label">Level:</span> <span id="battery-pct">--</span>%</div>
+        <div><span class="label">Voltage:</span> <span id="battery-volt">--</span> V</div>
+        <div><span class="label">Status:</span> <span id="battery-status">--</span></div>
+      </div>
+    </section>
+
+    <!-- Current Task -->
+    <section class="card" id="task-card">
+      <h2>Current Task</h2>
+      <div id="current-task-content">
+        <p class="dim">No active task</p>
+      </div>
+    </section>
+
+    <!-- Task Queue -->
+    <section class="card" id="queue-card">
+      <h2>Task Queue</h2>
+      <table id="queue-table">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Order ID</th>
+            <th>From</th>
+            <th>To</th>
+            <th>Priority</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="queue-body">
+          <tr><td colspan="6" class="dim">Queue empty</td></tr>
+        </tbody>
+      </table>
+    </section>
+  </main>
+
+  <footer>
+    <p>Warehouse Delivery Robot &mdash; ROS 2 Web Dashboard</p>
+  </footer>
+
+  <script src="https://cdn.jsdelivr.net/npm/roslib@1/build/roslib.min.js"></script>
+  <script src="dashboard.js"></script>
+</body>
+</html>

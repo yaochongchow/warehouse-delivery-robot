@@ -1,0 +1,18 @@
+terminal_dashboard:
+  ros__parameters:
+    update_rate: 2.0
+
+rosbag_fault_recorder:
+  ros__parameters:
+    record_duration: 30.0
+    cooldown: 60.0
+    output_dir: "~/rosbags"
+    topics:
+      - /current_task
+      - /task_queue
+      - /battery_state
+      - /diagnostics
+      - /odom
+      - /scan
+      - /tf
+      - /tf_static

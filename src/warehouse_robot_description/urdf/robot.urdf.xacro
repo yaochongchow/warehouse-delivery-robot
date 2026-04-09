@@ -1,0 +1,36 @@
+<?xml version="1.0"?>
+<robot xmlns:xacro="http://www.ros.org/wiki/xacro" name="warehouse_robot">
+
+  <!-- Robot parameters -->
+  <xacro:property name="chassis_length" value="0.5"/>
+  <xacro:property name="chassis_width" value="0.4"/>
+  <xacro:property name="chassis_height" value="0.15"/>
+  <xacro:property name="chassis_mass" value="10.0"/>
+
+  <xacro:property name="wheel_radius" value="0.1"/>
+  <xacro:property name="wheel_width" value="0.04"/>
+  <xacro:property name="wheel_mass" value="0.5"/>
+  <xacro:property name="wheel_separation" value="0.44"/>
+
+  <xacro:property name="caster_radius" value="0.04"/>
+  <xacro:property name="caster_mass" value="0.1"/>
+
+  <!-- Include sub-xacros -->
+  <xacro:include filename="$(find warehouse_robot_description)/urdf/chassis.xacro"/>
+  <xacro:include filename="$(find warehouse_robot_description)/urdf/wheels.xacro"/>
+  <xacro:include filename="$(find warehouse_robot_description)/urdf/sensors.xacro"/>
+  <xacro:include filename="$(find warehouse_robot_description)/urdf/ros2_control.xacro"/>
+  <xacro:include filename="$(find warehouse_robot_description)/urdf/gazebo.xacro"/>
+
+  <!-- Instantiate robot components -->
+  <xacro:chassis/>
+  <xacro:drive_wheel prefix="left" y_offset="${wheel_separation/2}"/>
+  <xacro:drive_wheel prefix="right" y_offset="${-wheel_separation/2}"/>
+  <xacro:caster_wheel/>
+  <xacro:lidar_sensor/>
+  <xacro:imu_sensor/>
+  <xacro:camera_sensor/>
+  <xacro:ros2_control_hardware/>
+  <xacro:gazebo_plugins/>
+
+</robot>

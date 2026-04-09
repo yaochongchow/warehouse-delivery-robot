@@ -1,0 +1,21 @@
+waypoints:
+  pickup_A:
+    x: -7.0
+    y: -3.0
+    yaw: 0.0
+  pickup_B:
+    x: -7.0
+    y: 3.0
+    yaw: 0.0
+  delivery_D1:
+    x: 7.0
+    y: -3.0
+    yaw: 3.14159
+  delivery_D2:
+    x: 7.0
+    y: 3.0
+    yaw: 3.14159
+  charging:
+    x: 8.0
+    y: 6.0
+    yaw: 1.5708

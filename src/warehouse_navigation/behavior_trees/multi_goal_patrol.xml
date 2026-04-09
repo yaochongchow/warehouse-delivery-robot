@@ -1,0 +1,97 @@
+<root main_tree_to_execute="MainTree">
+  <BehaviorTree ID="MainTree">
+    <Sequence name="MultiGoalPatrol">
+
+      <!-- Goal 1: pickup_A -->
+      <RecoveryNode number_of_retries="3" name="GoToGoal1">
+        <PipelineSequence name="NavToGoal1">
+          <RateController hz="1.0">
+            <ComputePathToPose goal="{goal_1}" path="{path}" planner_id="GridBased"/>
+          </RateController>
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+        </PipelineSequence>
+        <ReactiveFallback name="Recovery1">
+          <GoalUpdated/>
+          <RoundRobin>
+            <ClearEntireCostmap name="ClearLocal" service_name="local_costmap/clear_entirely_local_costmap"/>
+            <Spin spin_dist="1.57"/>
+            <Wait wait_duration="3"/>
+          </RoundRobin>
+        </ReactiveFallback>
+      </RecoveryNode>
+
+      <!-- Goal 2: pickup_B -->
+      <RecoveryNode number_of_retries="3" name="GoToGoal2">
+        <PipelineSequence name="NavToGoal2">
+          <RateController hz="1.0">
+            <ComputePathToPose goal="{goal_2}" path="{path}" planner_id="GridBased"/>
+          </RateController>
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+        </PipelineSequence>
+        <ReactiveFallback name="Recovery2">
+          <GoalUpdated/>
+          <RoundRobin>
+            <ClearEntireCostmap name="ClearLocal" service_name="local_costmap/clear_entirely_local_costmap"/>
+            <Spin spin_dist="1.57"/>
+            <Wait wait_duration="3"/>
+          </RoundRobin>
+        </ReactiveFallback>
+      </RecoveryNode>
+
+      <!-- Goal 3: delivery_D1 -->
+      <RecoveryNode number_of_retries="3" name="GoToGoal3">
+        <PipelineSequence name="NavToGoal3">
+          <RateController hz="1.0">
+            <ComputePathToPose goal="{goal_3}" path="{path}" planner_id="GridBased"/>
+          </RateController>
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+        </PipelineSequence>
+        <ReactiveFallback name="Recovery3">
+          <GoalUpdated/>
+          <RoundRobin>
+            <ClearEntireCostmap name="ClearLocal" service_name="local_costmap/clear_entirely_local_costmap"/>
+            <Spin spin_dist="1.57"/>
+            <Wait wait_duration="3"/>
+          </RoundRobin>
+        </ReactiveFallback>
+      </RecoveryNode>
+
+      <!-- Goal 4: delivery_D2 -->
+      <RecoveryNode number_of_retries="3" name="GoToGoal4">
+        <PipelineSequence name="NavToGoal4">
+          <RateController hz="1.0">
+            <ComputePathToPose goal="{goal_4}" path="{path}" planner_id="GridBased"/>
+          </RateController>
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+        </PipelineSequence>
+        <ReactiveFallback name="Recovery4">
+          <GoalUpdated/>
+          <RoundRobin>
+            <ClearEntireCostmap name="ClearLocal" service_name="local_costmap/clear_entirely_local_costmap"/>
+            <Spin spin_dist="1.57"/>
+            <Wait wait_duration="3"/>
+          </RoundRobin>
+        </ReactiveFallback>
+      </RecoveryNode>
+
+      <!-- Goal 5: charging -->
+      <RecoveryNode number_of_retries="3" name="GoToGoal5">
+        <PipelineSequence name="NavToGoal5">
+          <RateController hz="1.0">
+            <ComputePathToPose goal="{goal_5}" path="{path}" planner_id="GridBased"/>
+          </RateController>
+          <FollowPath path="{path}" controller_id="FollowPath"/>
+        </PipelineSequence>
+        <ReactiveFallback name="Recovery5">
+          <GoalUpdated/>
+          <RoundRobin>
+            <ClearEntireCostmap name="ClearLocal" service_name="local_costmap/clear_entirely_local_costmap"/>
+            <Spin spin_dist="1.57"/>
+            <Wait wait_duration="3"/>
+          </RoundRobin>
+        </ReactiveFallback>
+      </RecoveryNode>
+
+    </Sequence>
+  </BehaviorTree>
+</root>

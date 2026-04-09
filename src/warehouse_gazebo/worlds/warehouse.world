@@ -1,0 +1,167 @@
+<?xml version="1.0"?>
+<sdf version="1.6">
+  <world name="warehouse">
+
+    <!-- Physics -->
+    <physics type="ode">
+      <max_step_size>0.001</max_step_size>
+      <real_time_factor>1.0</real_time_factor>
+      <real_time_update_rate>1000</real_time_update_rate>
+    </physics>
+
+    <!-- Lighting -->
+    <light name="sun" type="directional">
+      <cast_shadows>true</cast_shadows>
+      <pose>0 0 10 0 0 0</pose>
+      <diffuse>0.8 0.8 0.8 1</diffuse>
+      <specular>0.2 0.2 0.2 1</specular>
+      <direction>-0.5 0.1 -0.9</direction>
+    </light>
+
+    <light name="overhead_1" type="point">
+      <pose>-5 0 2.8 0 0 0</pose>
+      <diffuse>0.9 0.9 0.85 1</diffuse>
+      <attenuation>
+        <range>15</range>
+        <constant>0.3</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+
+    <light name="overhead_2" type="point">
+      <pose>5 0 2.8 0 0 0</pose>
+      <diffuse>0.9 0.9 0.85 1</diffuse>
+      <attenuation>
+        <range>15</range>
+        <constant>0.3</constant>
+        <linear>0.01</linear>
+        <quadratic>0.001</quadratic>
+      </attenuation>
+    </light>
+
+    <!-- Ground plane (fallback) -->
+    <include>
+      <uri>model://ground_plane</uri>
+    </include>
+
+    <!-- Warehouse building shell -->
+    <include>
+      <uri>model://warehouse_building</uri>
+      <pose>0 0 0 0 0 0</pose>
+    </include>
+
+    <!-- ============================================ -->
+    <!-- SHELVING AISLES (4 aisles, 3 shelves each)   -->
+    <!-- Aisles run along X-axis, spaced along Y      -->
+    <!-- ============================================ -->
+
+    <!-- Aisle 1 (Y = -4) -->
+    <include><uri>model://shelf_unit</uri><name>shelf_1a</name><pose>-4 -4 0 0 0 0</pose></include>
+    <include><uri>model://shelf_unit</uri><name>shelf_1b</name><pose>0  -4 0 0 0 0</pose></include>
+    <include><uri>model://shelf_unit</uri><name>shelf_1c</name><pose>4  -4 0 0 0 0</pose></include>
+
+    <!-- Aisle 2 (Y = -1.5) -->
+    <include><uri>model://shelf_unit</uri><name>shelf_2a</name><pose>-4 -1.5 0 0 0 0</pose></include>
+    <include><uri>model://shelf_unit</uri><name>shelf_2b</name><pose>0  -1.5 0 0 0 0</pose></include>
+    <include><uri>model://shelf_unit</uri><name>shelf_2c</name><pose>4  -1.5 0 0 0 0</pose></include>
+
+    <!-- Aisle 3 (Y = 1.5) -->
+    <include><uri>model://shelf_unit</uri><name>shelf_3a</name><pose>-4 1.5 0 0 0 0</pose></include>
+    <include><uri>model://shelf_unit</uri><name>shelf_3b</name><pose>0  1.5 0 0 0 0</pose></include>
+    <include><uri>model://shelf_unit</uri><name>shelf_3c</name><pose>4  1.5 0 0 0 0</pose></include>
+
+    <!-- Aisle 4 (Y = 4) -->
+    <include><uri>model://shelf_unit</uri><name>shelf_4a</name><pose>-4 4 0 0 0 0</pose></include>
+    <include><uri>model://shelf_unit</uri><name>shelf_4b</name><pose>0  4 0 0 0 0</pose></include>
+    <include><uri>model://shelf_unit</uri><name>shelf_4c</name><pose>4  4 0 0 0 0</pose></include>
+
+    <!-- ============================================ -->
+    <!-- STATIONS                                      -->
+    <!-- ============================================ -->
+
+    <!-- Pickup stations (west side, green markers) -->
+    <include>
+      <uri>model://pickup_station</uri>
+      <name>pickup_A</name>
+      <pose>-8 -3 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://pickup_station</uri>
+      <name>pickup_B</name>
+      <pose>-8 3 0 0 0 0</pose>
+    </include>
+
+    <!-- Delivery stations (east side, blue markers) -->
+    <include>
+      <uri>model://delivery_station</uri>
+      <name>delivery_D1</name>
+      <pose>8 -3 0 0 0 0</pose>
+    </include>
+    <include>
+      <uri>model://delivery_station</uri>
+      <name>delivery_D2</name>
+      <pose>8 3 0 0 0 0</pose>
+    </include>
+
+    <!-- Charging station (northeast corner) -->
+    <include>
+      <uri>model://charging_station</uri>
+      <name>charging</name>
+      <pose>8.5 6 0 0 0 1.5708</pose>
+    </include>
+
+    <!-- ============================================ -->
+    <!-- HUMAN ACTORS (dynamic obstacles)              -->
+    <!-- ============================================ -->
+
+    <!-- Actor 1: walks across aisles (east-west) -->
+    <actor name="human_walker_1">
+      <skin>
+        <filename>walk.dae</filename>
+        <scale>1.0</scale>
+      </skin>
+      <animation name="walking">
+        <filename>walk.dae</filename>
+        <scale>1.0</scale>
+        <interpolate_x>true</interpolate_x>
+      </animation>
+      <script>
+        <loop>true</loop>
+        <auto_start>true</auto_start>
+        <trajectory id="0" type="walking">
+          <waypoint><time>0</time><pose>-6 -2.75 0 0 0 0</pose></waypoint>
+          <waypoint><time>15</time><pose>6 -2.75 0 0 0 0</pose></waypoint>
+          <waypoint><time>16</time><pose>6 -2.75 0 0 0 3.14</pose></waypoint>
+          <waypoint><time>31</time><pose>-6 -2.75 0 0 0 3.14</pose></waypoint>
+          <waypoint><time>32</time><pose>-6 -2.75 0 0 0 0</pose></waypoint>
+        </trajectory>
+      </script>
+    </actor>
+
+    <!-- Actor 2: walks across aisles (north-south) -->
+    <actor name="human_walker_2">
+      <skin>
+        <filename>walk.dae</filename>
+        <scale>1.0</scale>
+      </skin>
+      <animation name="walking">
+        <filename>walk.dae</filename>
+        <scale>1.0</scale>
+        <interpolate_x>true</interpolate_x>
+      </animation>
+      <script>
+        <loop>true</loop>
+        <auto_start>true</auto_start>
+        <trajectory id="0" type="walking">
+          <waypoint><time>0</time><pose>2 -5 0 0 0 1.5708</pose></waypoint>
+          <waypoint><time>12</time><pose>2 5 0 0 0 1.5708</pose></waypoint>
+          <waypoint><time>13</time><pose>2 5 0 0 0 -1.5708</pose></waypoint>
+          <waypoint><time>25</time><pose>2 -5 0 0 0 -1.5708</pose></waypoint>
+          <waypoint><time>26</time><pose>2 -5 0 0 0 1.5708</pose></waypoint>
+        </trajectory>
+      </script>
+    </actor>
+
+  </world>
+</sdf>
