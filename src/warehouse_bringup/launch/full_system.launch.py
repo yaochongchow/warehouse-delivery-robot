@@ -17,9 +17,9 @@ def generate_launch_description():
         ),
     )
 
-    # Delay task/dashboard startup until simulation and Nav2 have initialized.
+    # Delay task/dashboard startup until simulation and Nav2 are active.
     auxiliary_systems_launch = TimerAction(
-        period=40.0,
+        period=95.0,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(

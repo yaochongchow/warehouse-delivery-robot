@@ -25,6 +25,7 @@ setup(
         'console_scripts': [
             'task_manager_node = warehouse_task_manager.task_manager_node:main',
             'battery_simulator = warehouse_task_manager.battery_simulator:main',
+            'manipulation_simulator = warehouse_task_manager.manipulation_simulator:main',
         ],
     },
 )

@@ -21,10 +21,10 @@ const WORLD = {
 
 // Station positions (from stations.yaml)
 const STATIONS = {
-  pickup_A:    { x: -8.0, y: -3.0, type: 'pickup' },
-  pickup_B:    { x: -8.0, y:  3.0, type: 'pickup' },
-  delivery_D1: { x:  8.0, y: -3.0, type: 'delivery' },
-  delivery_D2: { x:  8.0, y:  3.0, type: 'delivery' },
+  pickup_A:    { x: -7.0, y: -3.0, type: 'pickup' },
+  pickup_B:    { x: -7.0, y:  3.0, type: 'pickup' },
+  delivery_D1: { x:  7.0, y: -3.0, type: 'delivery' },
+  delivery_D2: { x:  7.0, y:  3.0, type: 'delivery' },
   charging:    { x:  8.5, y:  6.0, type: 'charging' },
 };
 
@@ -53,6 +53,8 @@ const ctx           = canvas.getContext('2d');
 // ---------- Robot state -----------------------------------------------------
 let robotPose = { x: 0, y: -6, yaw: 1.5708 }; // spawn position
 let currentTask = null;
+let lastPoseStampSec = null;
+let lastPoseSample = null;
 
 // ---------- Canvas coordinate transform ------------------------------------
 function worldToCanvas(wx, wy) {
@@ -326,15 +328,35 @@ tfTopic.subscribe((msg) => {
   for (const transform of msg.transforms) {
     if (transform.child_frame_id === 'base_footprint' &&
         transform.header.frame_id === 'odom') {
+      const stampSec = transform.header.stamp.sec + transform.header.stamp.nanosec * 1e-9;
+      if (lastPoseStampSec !== null && stampSec <= lastPoseStampSec) {
+        // Ignore stale/out-of-order TF samples to prevent pose "popping".
+        continue;
+      }
+
       const t = transform.transform.translation;
       const q = transform.transform.rotation;
       const siny = 2.0 * (q.w * q.z + q.x * q.y);
       const cosy = 1.0 - 2.0 * (q.y * q.y + q.z * q.z);
       const yaw = Math.atan2(siny, cosy);
 
+      if (lastPoseSample !== null) {
+        const dt = stampSec - lastPoseSample.stampSec;
+        const dx = t.x - lastPoseSample.x;
+        const dy = t.y - lastPoseSample.y;
+        const dist = Math.hypot(dx, dy);
+        const speed = dt > 0 ? dist / dt : Infinity;
+        if (dist > 0.8 && speed > 3.0) {
+          // Reject physically implausible jumps that can appear during reconnect.
+          continue;
+        }
+      }
+
       robotPose.x = t.x;
       robotPose.y = t.y;
       robotPose.yaw = yaw;
+      lastPoseStampSec = stampSec;
+      lastPoseSample = { stampSec, x: t.x, y: t.y };
 
       elPoseX.textContent = t.x.toFixed(2);
       elPoseY.textContent = t.y.toFixed(2);
@@ -343,27 +365,7 @@ tfTopic.subscribe((msg) => {
   }
 });
 
-// Also use TFClient for proper map->base_footprint lookup
-const tfClient = new ROSLIB.TFClient({
-  ros: ros,
-  fixedFrame: 'map',
-  angularThres: 0.01,
-  transThres: 0.01,
-});
-
-tfClient.subscribe('base_footprint', (tf) => {
-  robotPose.x = tf.translation.x;
-  robotPose.y = tf.translation.y;
-
-  const q = tf.rotation;
-  const siny = 2.0 * (q.w * q.z + q.x * q.y);
-  const cosy = 1.0 - 2.0 * (q.y * q.y + q.z * q.z);
-  robotPose.yaw = Math.atan2(siny, cosy);
-
-  elPoseX.textContent = robotPose.x.toFixed(2);
-  elPoseY.textContent = robotPose.y.toFixed(2);
-  elPoseYaw.textContent = (robotPose.yaw * 180.0 / Math.PI).toFixed(1);
-});
+// Keep TF handling via /tf topic subscription only.
 
 // ---------- Submit order via service ----------------------------------------
 document.getElementById('submit-order-btn').addEventListener('click', () => {

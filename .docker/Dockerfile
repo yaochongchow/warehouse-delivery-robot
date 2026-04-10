@@ -10,6 +10,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-gazebo-ros2-control \
     ros-humble-gazebo-plugins \
     ros-humble-rosbridge-server \
+    ros-humble-tf2-web-republisher \
     ros-humble-teleop-twist-keyboard \
     ros-humble-diagnostic-updater \
     ros-humble-xacro \

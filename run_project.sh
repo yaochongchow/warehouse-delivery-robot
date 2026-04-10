@@ -30,7 +30,7 @@ fi
 echo "==> Building and starting Docker service"
 (
   cd "${COMPOSE_DIR}"
-  "${DOCKER_CMD[@]}" compose up --build -d
+  "${DOCKER_CMD[@]}" compose up --build -d --remove-orphans
 )
 
 CONTAINER_ID="$(
@@ -47,8 +47,10 @@ echo "==> Starting ROS launches in container ${CONTAINER_ID}"
 "${DOCKER_CMD[@]}" exec "${CONTAINER_ID}" bash -lc '
 set -euo pipefail
 
+set +u
 source /opt/ros/humble/setup.bash
 source /ros2_ws/install/setup.bash
+set -u
 
 kill_pid_file() {
   local pid_file="$1"
@@ -57,6 +59,10 @@ kill_pid_file() {
     old_pid="$(cat "${pid_file}" 2>/dev/null || true)"
     if [[ -n "${old_pid}" ]]; then
       kill "${old_pid}" 2>/dev/null || true
+      sleep 0.2
+      if kill -0 "${old_pid}" 2>/dev/null; then
+        kill -9 "${old_pid}" 2>/dev/null || true
+      fi
     fi
     rm -f "${pid_file}"
   fi
@@ -64,34 +70,45 @@ kill_pid_file() {
 
 kill_by_pattern() {
   local pattern="$1"
+  local signal_name="${2:-TERM}"
   if command -v pgrep >/dev/null 2>&1; then
     while read -r pid; do
       [[ -n "${pid}" ]] || continue
       [[ "${pid}" = "$$" ]] && continue
-      kill "${pid}" 2>/dev/null || true
+      kill -"${signal_name}" "${pid}" 2>/dev/null || true
     done < <(pgrep -f "${pattern}" || true)
   fi
+}
+
+force_kill_by_pattern() {
+  local pattern="$1"
+  kill_by_pattern "${pattern}" TERM
+  sleep 0.5
+  kill_by_pattern "${pattern}" KILL
 }
 
 kill_pid_file /tmp/full_system_live.pid
 kill_pid_file /tmp/web_dashboard_live.pid
 
-kill_by_pattern "ros2 launch warehouse_bringup full_system.launch.py"
-kill_by_pattern "ros2 launch warehouse_dashboard web_dashboard.launch.py"
-kill_by_pattern "rosbridge_websocket"
-kill_by_pattern "python3 -m http.server 8080"
-kill_by_pattern "gzserver "
+force_kill_by_pattern "ros2 launch warehouse_bringup full_system.launch.py"
+force_kill_by_pattern "ros2 launch warehouse_dashboard web_dashboard.launch.py"
+force_kill_by_pattern "rosbridge_websocket"
+force_kill_by_pattern "python3 -m http.server 8080"
+force_kill_by_pattern "spawn_entity.py"
+force_kill_by_pattern "robot_state_publisher"
+force_kill_by_pattern "(^|/)gzserver( |$)"
+force_kill_by_pattern "(^|/)gzclient( |$)"
 
 sleep 1
 
-nohup bash -lc "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 launch warehouse_bringup full_system.launch.py" >/tmp/full_system_live.log 2>&1 &
+nohup bash -lc "set +u; source /opt/ros/humble/setup.bash; source /ros2_ws/install/setup.bash; set -u; ros2 launch warehouse_bringup full_system.launch.py" >/tmp/full_system_live.log 2>&1 &
 echo $! >/tmp/full_system_live.pid
 
-nohup bash -lc "source /opt/ros/humble/setup.bash && source /ros2_ws/install/setup.bash && ros2 launch warehouse_dashboard web_dashboard.launch.py" >/tmp/web_dashboard_live.log 2>&1 &
+nohup bash -lc "set +u; source /opt/ros/humble/setup.bash; source /ros2_ws/install/setup.bash; set -u; ros2 launch warehouse_dashboard web_dashboard.launch.py" >/tmp/web_dashboard_live.log 2>&1 &
 echo $! >/tmp/web_dashboard_live.pid
 
-# Wait until order service appears (max ~120s)
-for _ in $(seq 1 60); do
+# Wait until order service appears (max ~180s)
+for _ in $(seq 1 90); do
   if ros2 service list 2>/dev/null | grep -q "^/submit_order$"; then
     break
   fi

@@ -55,15 +55,15 @@ def generate_launch_description():
         ],
     )
 
-    amcl = Node(
-        package='nav2_amcl',
-        executable='amcl',
-        name='amcl',
+    # In simulation we can keep map->odom fixed; this avoids AMCL relocalizing
+    # to incorrect symmetric aisles during startup.
+    map_to_odom_tf = Node(
+        package='tf2_ros',
+        executable='static_transform_publisher',
+        name='map_to_odom_static_tf',
         output='screen',
-        parameters=[
-            params_file,
-            {'use_sim_time': use_sim_time},
-        ],
+        arguments=['0', '0', '0', '0', '0', '0', 'map', 'odom'],
+        parameters=[{'use_sim_time': use_sim_time}],
     )
 
     lifecycle_manager_localization = Node(
@@ -74,7 +74,7 @@ def generate_launch_description():
         parameters=[
             {'use_sim_time': use_sim_time},
             {'autostart': True},
-            {'node_names': ['map_server', 'amcl']},
+            {'node_names': ['map_server']},
         ],
     )
 
@@ -170,7 +170,7 @@ def generate_launch_description():
         declare_bt_xml,
         # Localization
         map_server,
-        amcl,
+        map_to_odom_tf,
         lifecycle_manager_localization,
         # Navigation
         controller_server,

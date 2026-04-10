@@ -15,16 +15,20 @@ from rclpy.node import Node
 from rclpy.action import ActionClient
 from rclpy.callback_groups import ReentrantCallbackGroup
 from rclpy.qos import QoSProfile, ReliabilityPolicy, DurabilityPolicy
+from rclpy.time import Time
+from rclpy.duration import Duration
 
 from ament_index_python.packages import get_package_share_directory
 
 from nav2_msgs.action import NavigateToPose
 from sensor_msgs.msg import BatteryState
 from geometry_msgs.msg import PoseStamped
+from tf2_ros import Buffer, TransformListener
 
 from warehouse_interfaces.msg import DeliveryOrder as DeliveryOrderMsg
 from warehouse_interfaces.msg import TaskQueue as TaskQueueMsg
 from warehouse_interfaces.srv import SubmitOrder, CancelOrder
+from warehouse_interfaces.action import PickObject, PlaceObject
 
 from diagnostic_updater import Updater, FunctionDiagnosticTask
 from diagnostic_msgs.msg import DiagnosticStatus
@@ -53,6 +57,7 @@ class TaskManagerNode(Node):
         self.declare_parameter('charge_resume_threshold', 80.0)
         self.declare_parameter('pickup_duration', 2.0)
         self.declare_parameter('dropoff_duration', 2.0)
+        self.declare_parameter('use_manipulation_actions', True)
 
         stations_yaml = self.get_parameter('stations_yaml').get_parameter_value().string_value
         if not stations_yaml:
@@ -63,6 +68,9 @@ class TaskManagerNode(Node):
         self.charge_resume = self.get_parameter('charge_resume_threshold').value
         self.pickup_duration = self.get_parameter('pickup_duration').value
         self.dropoff_duration = self.get_parameter('dropoff_duration').value
+        self.use_manipulation_actions = bool(
+            self.get_parameter('use_manipulation_actions').value
+        )
 
         # ---- Load stations -----------------------------------------------------
         self.stations = load_stations(stations_yaml)
@@ -76,8 +84,14 @@ class TaskManagerNode(Node):
         self.current_order: DeliveryOrder | None = None
         self.battery_pct: float = 100.0
         self.nav_goal_handle = None
+        self.pick_goal_handle = None
+        self.place_goal_handle = None
+        self.manipulation_in_progress = False
         self.wait_start: float | None = None
         self.interrupted_order: DeliveryOrder | None = None
+        self._nav_unready_logged = False
+        self._nav_unready_reason = ''
+        self.next_dispatch_time: float = 0.0
 
         # ---- Callback group for concurrent service / action handling -----------
         self.cb_group = ReentrantCallbackGroup()
@@ -87,6 +101,14 @@ class TaskManagerNode(Node):
             self, NavigateToPose, 'navigate_to_pose',
             callback_group=self.cb_group,
         )
+        self.pick_client = ActionClient(
+            self, PickObject, '/pick_object', callback_group=self.cb_group
+        )
+        self.place_client = ActionClient(
+            self, PlaceObject, '/place_object', callback_group=self.cb_group
+        )
+        self.tf_buffer = Buffer()
+        self.tf_listener = TransformListener(self.tf_buffer, self, spin_thread=False)
 
         # ---- Publishers --------------------------------------------------------
         qos = QoSProfile(
@@ -175,8 +197,7 @@ class TaskManagerNode(Node):
         # Cancel current order
         if self.current_order and self.current_order.order_id == request.order_id:
             self.current_order.status = TaskStatus.CANCELLED
-            if self.nav_goal_handle is not None:
-                self.nav_goal_handle.cancel_goal_async()
+            self._cancel_active_goals()
             self.current_order = None
             self.state = State.IDLE
             response.success = True
@@ -208,11 +229,10 @@ class TaskManagerNode(Node):
             if self.current_order is not None:
                 self.interrupted_order = self.current_order
                 self.current_order = None
-                if self.nav_goal_handle is not None:
-                    self.nav_goal_handle.cancel_goal_async()
-                    self.nav_goal_handle = None
+                self._cancel_active_goals()
             self.state = State.NAV_TO_CHARGER
-            self._send_nav_goal('charging')
+            if not self._send_nav_goal('charging'):
+                self.state = State.IDLE
             return
 
         # ---------- Charging state -------------------------------------------
@@ -234,6 +254,21 @@ class TaskManagerNode(Node):
         if self.state == State.IDLE:
             if not self.task_queue:
                 return
+            if time.time() < self.next_dispatch_time:
+                return
+            # Avoid consuming orders until Nav2 and required TF links are ready.
+            nav_ready, reason = self._is_navigation_ready()
+            if not nav_ready:
+                if not self._nav_unready_logged:
+                    self.get_logger().warn(
+                        f'Navigation not ready yet ({reason}); keeping orders queued.'
+                    )
+                    self._nav_unready_reason = reason
+                    self._nav_unready_logged = True
+                self.next_dispatch_time = time.time() + 1.0
+                return
+            self._nav_unready_logged = False
+            self._nav_unready_reason = ''
             _, order = heapq.heappop(self.task_queue)
             self.current_order = order
             self.current_order.status = TaskStatus.NAVIGATING_TO_PICKUP
@@ -241,10 +276,18 @@ class TaskManagerNode(Node):
             self.get_logger().info(
                 f'Starting order {order.order_id}: navigating to {order.pickup_station}'
             )
-            self._send_nav_goal(order.pickup_station)
+            if not self._send_nav_goal(order.pickup_station):
+                # Re-queue if Nav2 dropped out between readiness check and send.
+                self.current_order.status = TaskStatus.PENDING
+                heapq.heappush(self.task_queue, (self.current_order.priority, self.current_order))
+                self.current_order = None
+                self.state = State.IDLE
+                self.next_dispatch_time = time.time() + 1.0
 
         # ---------- PICKING_UP / DROPPING_OFF (timed wait) -------------------
         elif self.state == State.PICKING_UP:
+            if self.manipulation_in_progress:
+                return
             if self.wait_start is None:
                 self.wait_start = time.time()
                 self.current_order.status = TaskStatus.PICKING_UP
@@ -258,9 +301,12 @@ class TaskManagerNode(Node):
                 self.get_logger().info(
                     f'Pickup complete, navigating to {self.current_order.delivery_station}'
                 )
-                self._send_nav_goal(self.current_order.delivery_station)
+                if not self._send_nav_goal(self.current_order.delivery_station):
+                    self._handle_nav_failure()
 
         elif self.state == State.DROPPING_OFF:
+            if self.manipulation_in_progress:
+                return
             if self.wait_start is None:
                 self.wait_start = time.time()
                 self.current_order.status = TaskStatus.DROPPING_OFF
@@ -279,10 +325,27 @@ class TaskManagerNode(Node):
     # =========================================================================
     # Navigation helpers
     # =========================================================================
-    def _send_nav_goal(self, station_name: str):
+    def _cancel_active_goals(self):
+        if self.nav_goal_handle is not None:
+            self.nav_goal_handle.cancel_goal_async()
+            self.nav_goal_handle = None
+        if self.pick_goal_handle is not None:
+            self.pick_goal_handle.cancel_goal_async()
+            self.pick_goal_handle = None
+        if self.place_goal_handle is not None:
+            self.place_goal_handle.cancel_goal_async()
+            self.place_goal_handle = None
+        self.manipulation_in_progress = False
+        self.wait_start = None
+
+    def _send_nav_goal(self, station_name: str) -> bool:
         if station_name not in self.stations:
             self.get_logger().error(f'Station "{station_name}" not found in stations map.')
-            return
+            return False
+        nav_ready, reason = self._is_navigation_ready()
+        if not nav_ready:
+            self.get_logger().warn(f'Navigation unavailable ({reason}); delaying goal send.')
+            return False
 
         goal_msg = NavigateToPose.Goal()
         goal_pose = PoseStamped()
@@ -292,21 +355,47 @@ class TaskManagerNode(Node):
         goal_pose.pose = src.pose
         goal_msg.pose = goal_pose
 
-        if not self.nav_client.wait_for_server(timeout_sec=5.0):
-            self.get_logger().error('Nav2 action server not available!')
-            return
+        if not self.nav_client.wait_for_server(timeout_sec=1.0):
+            self.get_logger().warn('Nav2 action server not available yet.')
+            return False
 
         self.get_logger().info(f'Sending navigation goal to station "{station_name}"')
         send_goal_future = self.nav_client.send_goal_async(
             goal_msg, feedback_callback=self._nav_feedback_cb
         )
         send_goal_future.add_done_callback(self._nav_goal_response_cb)
+        return True
+
+    def _is_navigation_ready(self) -> tuple[bool, str]:
+        if not self.nav_client.server_is_ready():
+            return False, 'navigate_to_pose action server unavailable'
+
+        required_tf_links = (
+            ('odom', 'base_link'),
+            ('map', 'odom'),
+            ('map', 'base_link'),
+        )
+        for target_frame, source_frame in required_tf_links:
+            if not self.tf_buffer.can_transform(
+                target_frame,
+                source_frame,
+                Time(),
+                timeout=Duration(seconds=0.1),
+            ):
+                return False, f'missing TF: {source_frame} -> {target_frame}'
+
+        return True, 'ready'
 
     def _nav_goal_response_cb(self, future):
         goal_handle = future.result()
         if not goal_handle.accepted:
-            self.get_logger().warn('Navigation goal was rejected.')
-            self._handle_nav_failure()
+            self.get_logger().warn('Navigation goal was rejected; will retry later.')
+            if self.current_order is not None and self.state in (State.NAV_TO_PICKUP, State.NAV_TO_DELIVERY):
+                self.current_order.status = TaskStatus.PENDING
+                heapq.heappush(self.task_queue, (self.current_order.priority, self.current_order))
+                self.current_order = None
+            self.state = State.IDLE
+            self.next_dispatch_time = time.time() + 2.0
             return
 
         self.nav_goal_handle = goal_handle
@@ -329,29 +418,199 @@ class TaskManagerNode(Node):
             self._handle_nav_success()
         elif status == CANCELED:
             self.get_logger().info('Navigation goal was cancelled.')
-            # Cancellation is handled by the code that requested it
+            if self.state in (State.NAV_TO_PICKUP, State.NAV_TO_DELIVERY):
+                # Nav2 lifecycle resets can cancel in-flight goals. Re-queue
+                # the order so it retries after Nav2 returns active.
+                if self.current_order is not None:
+                    self.current_order.status = TaskStatus.PENDING
+                    heapq.heappush(
+                        self.task_queue, (self.current_order.priority, self.current_order)
+                    )
+                    self.current_order = None
+                self.state = State.IDLE
+                self.next_dispatch_time = time.time() + 2.0
+            elif self.state == State.NAV_TO_CHARGER:
+                # Retry charging navigation on next tick if it was canceled.
+                self.state = State.IDLE
+                self.next_dispatch_time = time.time() + 1.0
+            # Other cancellations are intentionally no-op.
         else:
             self.get_logger().warn(f'Navigation failed with status {status}.')
             self._handle_nav_failure()
 
     def _handle_nav_success(self):
         if self.state == State.NAV_TO_PICKUP:
+            if self.use_manipulation_actions and self._start_pick_action():
+                return
             self.state = State.PICKING_UP
+            self.wait_start = None
+            self.get_logger().warn(
+                'Pick action unavailable; using timed pickup fallback.'
+            )
         elif self.state == State.NAV_TO_DELIVERY:
+            if self.use_manipulation_actions and self._start_place_action():
+                return
             self.state = State.DROPPING_OFF
+            self.wait_start = None
+            self.get_logger().warn(
+                'Place action unavailable; using timed dropoff fallback.'
+            )
         elif self.state == State.NAV_TO_CHARGER:
             self.state = State.CHARGING
             self.get_logger().info('Arrived at charger, waiting for battery.')
 
-    def _handle_nav_failure(self):
-        if self.current_order is not None:
-            self.get_logger().error(
-                f'Navigation failed for order {self.current_order.order_id}. '
-                'Marking as FAILED.'
+    # =========================================================================
+    # Manipulation helpers
+    # =========================================================================
+    def _start_pick_action(self) -> bool:
+        if self.current_order is None:
+            return False
+        if not self.pick_client.wait_for_server(timeout_sec=1.0):
+            return False
+
+        goal_msg = PickObject.Goal()
+        goal_msg.order_id = self.current_order.order_id
+        goal_msg.station_name = self.current_order.pickup_station
+        goal_msg.object_id = ''
+
+        self.state = State.PICKING_UP
+        self.current_order.status = TaskStatus.PICKING_UP
+        self.wait_start = None
+        self.manipulation_in_progress = True
+        self.get_logger().info(
+            f'Sending pick action at "{self.current_order.pickup_station}"'
+        )
+        send_goal_future = self.pick_client.send_goal_async(
+            goal_msg, feedback_callback=self._pick_feedback_cb
+        )
+        send_goal_future.add_done_callback(self._pick_goal_response_cb)
+        return True
+
+    def _pick_goal_response_cb(self, future):
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.manipulation_in_progress = False
+            self.get_logger().warn('Pick action rejected; using timed pickup fallback.')
+            if self.state == State.PICKING_UP:
+                self.wait_start = None
+            return
+
+        self.pick_goal_handle = goal_handle
+        result_future = goal_handle.get_result_async()
+        result_future.add_done_callback(self._pick_result_cb)
+
+    def _pick_feedback_cb(self, feedback_msg):
+        pass
+
+    def _pick_result_cb(self, future):
+        self.pick_goal_handle = None
+        self.manipulation_in_progress = False
+        if self.current_order is None or self.state != State.PICKING_UP:
+            return
+
+        status = future.result().status
+        result = future.result().result
+        SUCCEEDED = 4
+
+        if status == SUCCEEDED and result.success:
+            self.current_order.status = TaskStatus.NAVIGATING_TO_DELIVERY
+            self.state = State.NAV_TO_DELIVERY
+            self.get_logger().info(
+                f'Pick complete, navigating to {self.current_order.delivery_station}'
             )
-            self.current_order.status = TaskStatus.FAILED
+            if not self._send_nav_goal(self.current_order.delivery_station):
+                self._handle_nav_failure()
+            return
+
+        self.get_logger().warn(f'Pick failed: {result.message}')
+        self._handle_manipulation_failure()
+
+    def _start_place_action(self) -> bool:
+        if self.current_order is None:
+            return False
+        if not self.place_client.wait_for_server(timeout_sec=1.0):
+            return False
+
+        goal_msg = PlaceObject.Goal()
+        goal_msg.order_id = self.current_order.order_id
+        goal_msg.station_name = self.current_order.delivery_station
+
+        self.state = State.DROPPING_OFF
+        self.current_order.status = TaskStatus.DROPPING_OFF
+        self.wait_start = None
+        self.manipulation_in_progress = True
+        self.get_logger().info(
+            f'Sending place action at "{self.current_order.delivery_station}"'
+        )
+        send_goal_future = self.place_client.send_goal_async(
+            goal_msg, feedback_callback=self._place_feedback_cb
+        )
+        send_goal_future.add_done_callback(self._place_goal_response_cb)
+        return True
+
+    def _place_goal_response_cb(self, future):
+        goal_handle = future.result()
+        if not goal_handle.accepted:
+            self.manipulation_in_progress = False
+            self.get_logger().warn('Place action rejected; using timed dropoff fallback.')
+            if self.state == State.DROPPING_OFF:
+                self.wait_start = None
+            return
+
+        self.place_goal_handle = goal_handle
+        result_future = goal_handle.get_result_async()
+        result_future.add_done_callback(self._place_result_cb)
+
+    def _place_feedback_cb(self, feedback_msg):
+        pass
+
+    def _place_result_cb(self, future):
+        self.place_goal_handle = None
+        self.manipulation_in_progress = False
+        if self.current_order is None or self.state != State.DROPPING_OFF:
+            return
+
+        status = future.result().status
+        result = future.result().result
+        SUCCEEDED = 4
+
+        if status == SUCCEEDED and result.success:
+            self.current_order.status = TaskStatus.COMPLETED
+            self.get_logger().info(
+                f'Order {self.current_order.order_id} completed!'
+            )
+            self.current_order = None
+            self.state = State.IDLE
+            return
+
+        self.get_logger().warn(f'Place failed: {result.message}')
+        self._handle_manipulation_failure()
+
+    def _handle_manipulation_failure(self):
+        if self.current_order is not None:
+            self.current_order.status = TaskStatus.PENDING
+            heapq.heappush(self.task_queue, (self.current_order.priority, self.current_order))
+            self.get_logger().warn(
+                f'Manipulation failed for order {self.current_order.order_id}; '
+                're-queueing to retry.'
+            )
             self.current_order = None
         self.state = State.IDLE
+        self.next_dispatch_time = time.time() + 2.0
+
+    def _handle_nav_failure(self):
+        if self.current_order is not None:
+            # Navigation can fail transiently while Nav2 recovers. Re-queue
+            # instead of permanently failing the order.
+            self.get_logger().warn(
+                f'Navigation failed for order {self.current_order.order_id}; '
+                're-queueing to retry.'
+            )
+            self.current_order.status = TaskStatus.PENDING
+            heapq.heappush(self.task_queue, (self.current_order.priority, self.current_order))
+            self.current_order = None
+        self.state = State.IDLE
+        self.next_dispatch_time = time.time() + 2.0
 
     # =========================================================================
     # Publishers

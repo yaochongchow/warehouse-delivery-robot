@@ -1,0 +1,13 @@
+# Goal
+string order_id
+string station_name
+string object_id
+---
+# Result
+bool success
+string message
+string picked_object_id
+---
+# Feedback
+string phase
+float32 progress

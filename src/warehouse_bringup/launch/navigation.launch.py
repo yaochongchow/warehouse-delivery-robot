@@ -18,9 +18,9 @@ def generate_launch_description():
         ),
     )
 
-    # Launch Nav2 navigation after a delay to let Gazebo and robot spawn first
+    # Launch Nav2 only after Gazebo and robot spawn are reliably up.
     nav_launch = TimerAction(
-        period=30.0,
+        period=65.0,
         actions=[
             IncludeLaunchDescription(
                 PythonLaunchDescriptionSource(

@@ -20,6 +20,7 @@ def generate_launch_description():
                 'charge_resume_threshold': 80.0,
                 'pickup_duration': 2.0,
                 'dropoff_duration': 2.0,
+                'use_manipulation_actions': True,
             }],
         ),
         Node(
@@ -33,6 +34,17 @@ def generate_launch_description():
                 'drain_rate_per_min': 0.5,
                 'charge_rate_per_min': 5.0,
                 'charge_radius': 1.0,
+            }],
+        ),
+        Node(
+            package='warehouse_task_manager',
+            executable='manipulation_simulator',
+            name='manipulation_simulator',
+            output='screen',
+            parameters=[{
+                'pick_duration': 2.0,
+                'place_duration': 2.0,
+                'failure_rate': 0.0,
             }],
         ),
     ])

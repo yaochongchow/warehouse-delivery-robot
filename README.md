@@ -4,7 +4,7 @@
 
 A full-stack ROS2 mobile robot system for autonomous warehouse deliveries. The robot SLAM-maps a custom Gazebo warehouse, navigates via Nav2 with behavior trees, executes prioritized delivery tasks, and reports real-time status through a monitoring dashboard.
 
-![Demo](docs/demo.gif)
+![Demo](docs/demo/dashboard-demo.gif)
 
 ---
 
@@ -328,3 +328,93 @@ source /opt/ros/humble/setup.bash
 source /ros2_ws/install/setup.bash
 ros2 launch warehouse_bringup full_system.launch.py
 ```
+
+---
+
+## One-Command Run (Recommended)
+
+From the project root:
+
+```bash
+chmod +x run_project.sh
+./run_project.sh
+```
+
+What this script does:
+
+- Builds/starts Docker
+- Launches full system + web dashboard inside container
+- Exposes dashboard at `http://localhost:8080`
+- Exposes noVNC at `http://localhost:6080`
+- Opens the dashboard automatically on Linux desktops
+
+Useful while running:
+
+```bash
+# Follow full system log
+sudo docker exec docker-ros2-1 tail -f /tmp/full_system_live.log
+
+# Follow web dashboard log
+sudo docker exec docker-ros2-1 tail -f /tmp/web_dashboard_live.log
+```
+
+If you click **Send Order** and want to confirm execution:
+
+- `/current_task` should move from `navigating_to_pickup` to `navigating_to_delivery`, then back to `idle`.
+- Robot should move from spawn (`y=-6`) toward pickup/delivery stations.
+
+### Record Demo Video
+
+From project root:
+
+```bash
+python3 -m venv .venv-demo
+.venv-demo/bin/pip install imageio imageio-ffmpeg pillow
+.venv-demo/bin/python scripts/record_demo_video.py --output docs/demo/dashboard-demo.mp4
+```
+
+This captures the live dashboard and submits one sample order during recording.
+
+---
+
+## Virtual Pick/Place Scaffold
+
+The system now includes simulated manipulation actions:
+
+- `/pick_object` (`warehouse_interfaces/action/PickObject`)
+- `/place_object` (`warehouse_interfaces/action/PlaceObject`)
+
+Flow per order is now:
+
+1. Navigate to pickup station
+2. Execute `PickObject` action
+3. Navigate to delivery station
+4. Execute `PlaceObject` action
+5. Mark order completed
+
+To verify from logs:
+
+```bash
+sudo docker exec docker-ros2-1 grep -E "Sending pick action|Picked|Sending place action|Placed|completed!" /tmp/full_system_live.log | tail -n 50
+```
+
+---
+
+## Latest Runtime Notes (2026-04-09)
+
+- `run_project.sh` now force-cleans stale ROS/Gazebo processes before relaunch, so `gzserver` no longer fails with `Address already in use`.
+- Task dispatch now waits for Nav2 action readiness plus TF chain availability (`odom/base_link`, `map/odom`, `map/base_link`) before sending goals.
+
+If web log still shows:
+
+```text
+Unable to import tf2_web_republisher.msg
+```
+
+this is usually from an old browser tab still running cached JS that used `TFClient`. Open a fresh tab at:
+
+```text
+http://localhost:8080/
+```
+
+and hard-refresh (`Ctrl+Shift+R`).

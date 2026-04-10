@@ -13,6 +13,8 @@ rosidl_generate_interfaces(${PROJECT_NAME}
   "srv/SubmitOrder.srv"
   "srv/CancelOrder.srv"
   "action/ExecuteDelivery.action"
+  "action/PickObject.action"
+  "action/PlaceObject.action"
   DEPENDENCIES builtin_interfaces std_msgs geometry_msgs
 )
 
