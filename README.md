@@ -1,7 +1,5 @@
 # ROS2 Warehouse Delivery Robot
 
-[![CI](https://github.com/ycchow/warehouse-delivery-robot/actions/workflows/ci.yaml/badge.svg)](https://github.com/ycchow/warehouse-delivery-robot/actions)
-
 A full-stack ROS2 mobile robot system for autonomous warehouse deliveries. The robot SLAM-maps a custom Gazebo warehouse, navigates via Nav2 with behavior trees, executes prioritized delivery tasks, and reports real-time status through a monitoring dashboard.
 
 ![Demo](docs/demo/dashboard-demo.gif)
